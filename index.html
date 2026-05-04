@@ -2594,6 +2594,21 @@ function goPage(id) {
 function toggleMenu(){document.getElementById('mobileMenu').classList.toggle('open');}
 function closeMenu(){document.getElementById('mobileMenu').classList.remove('open');}
 
+// === NAVIGATION PAR HASH (QR codes / liens directs) ===
+function navigateFromHash(){
+  const hash = window.location.hash.replace('#','').toLowerCase();
+  if(hash && PAGES.includes(hash)) goPage(hash);
+}
+window.addEventListener('DOMContentLoaded', navigateFromHash);
+window.addEventListener('hashchange', navigateFromHash);
+
+// Mise à jour du hash dans l'URL quand on change de page
+const _goPage = goPage;
+goPage = function(id){
+  _goPage(id);
+  history.replaceState(null, '', id === 'accueil' ? ' ' : '#' + id);
+};
+
 // === PROFIL TOGGLE ===
 function showPanel(type){
   ['diet','etu','pub'].forEach(t=>{
