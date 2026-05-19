@@ -2064,43 +2064,47 @@ select.e-select:focus,input.e-input:focus,textarea.e-textarea:focus{border-color
 
 // ===== TÉLÉCHARGEMENT PDF SÉCURISÉ (tout intégré, zéro fichier externe) =====
 function ouvrirPDF(fichier, nomSauvegarde) {
-  // Utiliser les PDFs intégrés en base64 dans le HTML
   var b64 = null;
   if (fichier === 'guide.pdf') b64 = window.__GUIDE_PDF__;
   if (fichier === 'recettes.pdf') b64 = window.__RECETTES_PDF__;
   
-  if (b64) {
-    // Convertir base64 → Blob → URL → télécharger dans nouvel onglet
-    try {
-      var binary = atob(b64);
-      var bytes = new Uint8Array(binary.length);
-      for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      var blob = new Blob([bytes], {type: 'application/pdf'});
-      var url = URL.createObjectURL(blob);
-      var lien = document.createElement('a');
-      lien.href = url;
-      lien.setAttribute('download', nomSauvegarde || fichier);
-      lien.style.display = 'none';
-      document.body.appendChild(lien);
-      lien.click();
-      setTimeout(function() {
-        document.body.removeChild(lien);
-        URL.revokeObjectURL(url);
-      }, 1000);
-    } catch(e) {
-      alert('Erreur lors du téléchargement. Réessayez.');
-    }
-  } else {
-    // Fallback si assets.js pas encore chargé
+  if (!b64) {
+    var el = event && event.target ? event.target : null;
+    var origText = el ? el.textContent : '';
+    if (el) el.textContent = '⏳ Chargement...';
+    var tries = 0;
+    var wait = setInterval(function() {
+      tries++;
+      if (fichier === 'guide.pdf') b64 = window.__GUIDE_PDF__;
+      if (fichier === 'recettes.pdf') b64 = window.__RECETTES_PDF__;
+      if (b64 || tries > 30) {
+        clearInterval(wait);
+        if (el) el.textContent = origText;
+        if (b64) telechargerBlob(b64, nomSauvegarde || fichier);
+        else alert('Fichier pas encore chargé. Patientez quelques secondes et réessayez.');
+      }
+    }, 500);
+    return;
+  }
+  telechargerBlob(b64, nomSauvegarde || fichier);
+}
+
+function telechargerBlob(b64, nom) {
+  try {
+    var binary = atob(b64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    var blob = new Blob([bytes], {type: 'application/pdf'});
+    var url = URL.createObjectURL(blob);
     var lien = document.createElement('a');
-    lien.href = fichier;
-    lien.setAttribute('target', '_blank');
-    lien.setAttribute('rel', 'noopener noreferrer');
+    lien.href = url;
+    lien.download = nom;
+    lien.target = '_blank';
     lien.style.display = 'none';
     document.body.appendChild(lien);
     lien.click();
-    setTimeout(function() { document.body.removeChild(lien); }, 500);
-  }
+    setTimeout(function() { document.body.removeChild(lien); URL.revokeObjectURL(url); }, 2000);
+  } catch(e) { alert('Erreur: ' + e.message); }
 }
 
 // ===== DONNÉES =====
@@ -2557,7 +2561,7 @@ eUpdateNav();
             <span style="font-size:.75rem;padding:3px 10px;border-radius:12px;background:rgba(201,164,77,.14);color:#7a5c10;border:1px solid rgba(201,164,77,.3);">Stress</span>
           </div>
           <div class="livret-actions">
-            <button class="btn-gold-sm" onclick="ouvrirPDF(\'recettes.pdf\',\'Livret_recettes.pdf\')">📥 Télécharger le livret (PDF)</button>
+            <button class="btn-gold-sm" onclick="ouvrirPDF('recettes.pdf','Livret_recettes.pdf')">📥 Télécharger le livret (PDF)</button>
           </div>
         </div>
         <div class="livret-mockup">
@@ -2630,7 +2634,7 @@ eUpdateNav();
             <button class="btn-gold-sm" onclick="openImgModal(0)">👁 Aperçu fiche complète (FR + AR)</button>
           </div>
         </div>
-        <div class="res-card"><div class="rc-icon-wrap" style="background:rgba(29,158,117,.1);">🫕</div><h3>Livret de recettes protectrices</h3><p class="rc-desc">7 recettes algériennes revisitées : chorba aux lentilles, salade de pois chiches, couscous aux légumineuses, lben du soir, infusion cumin-cannelle-dattes, energy balls…</p><div class="pdf-actions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:1rem;"><button class="btn-gold-sm" onclick="ouvrirPDF(\'recettes.pdf\',\'Livret_recettes.pdf\')">📥 Télécharger (PDF)</button><button class="btn-gold-sm" onclick="ouvrirPDF(\'recettes.pdf\',\'Livret_recettes.pdf\')">↗ Télécharger</button></div></div>
+        <div class="res-card"><div class="rc-icon-wrap" style="background:rgba(29,158,117,.1);">🫕</div><h3>Livret de recettes protectrices</h3><p class="rc-desc">7 recettes algériennes revisitées : chorba aux lentilles, salade de pois chiches, couscous aux légumineuses, lben du soir, infusion cumin-cannelle-dattes, energy balls…</p><div class="pdf-actions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:1rem;"><button class="btn-gold-sm" onclick="ouvrirPDF('recettes.pdf','Livret_recettes.pdf')">📥 Télécharger (PDF)</button><button class="btn-gold-sm" onclick="ouvrirPDF('recettes.pdf','Livret_recettes.pdf')">↗ Télécharger</button></div></div>
         <div class="res-card"><div class="rc-icon-wrap rc-iw-red">🏥</div><h3>Vous avez une pathologie ?</h3><p class="rc-desc">Si vous avez un diabète, une maladie rénale, cardiovasculaire ou autre, les recommandations générales peuvent ne pas être adaptées. Contactez-nous.</p><div class="pdf-actions" style="margin-top:1rem;"><button class="btn-navy-sm" style="width:100%;" onclick="goPage('contact')">✉️ Contacter un diététicien</button></div></div>
       </div>
       <div class="share-section"><h2>Partagez avec votre famille</h2><p class="share-desc">Ce que vous apprenez ici peut protéger vos proches. Partagez ce site avec votre famille — surtout si vous avez des antécédents de diabète dans votre entourage.</p><div class="share-btns"><button class="btn-share-gold" onclick="sharesite()">📢 Partager le site</button><button class="btn-share-out" onclick="copyLink()">🔗 Copier le lien</button></div></div>
@@ -3015,20 +3019,11 @@ function openPdfBase64(b64, title, filename) {
     for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
     var blob = new Blob([bytes], {type: 'application/pdf'});
     var blobUrl = URL.createObjectURL(blob);
-    var modal = document.getElementById('pdfModal');
-    var frame = document.getElementById('pdfModalFrame');
-    var dlBtn = document.getElementById('pdfModalDl');
-    var titleEl = document.getElementById('pdfModalTitle');
-    if (frame._blobUrl) URL.revokeObjectURL(frame._blobUrl);
-    frame._blobUrl = blobUrl;
-    frame.src = blobUrl;
-    dlBtn.href = blobUrl;
-    dlBtn.download = filename || 'document.pdf';
-    titleEl.textContent = title || 'Aperçu';
-    modal.classList.add('open');
-    document.body.style.overflow = 'hidden';
+    // Ouvrir dans nouvel onglet (plus fiable sur mobile que iframe)
+    window.open(blobUrl, '_blank');
+    setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 5000);
   } catch(e) {
-    alert('Impossible d'afficher l'aperçu.');
+    alert('Impossible d'afficher l'aperçu: ' + e.message);
   }
 }
 
@@ -3042,11 +3037,10 @@ function downloadPdfBase64(b64, filename) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url; a.download = filename || 'document.pdf';
-    a.click();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
-  } catch(e) {
-    alert('Erreur de téléchargement.');
-  }
+    a.target = '_blank';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 2000);
+  } catch(e) { alert('Erreur: ' + e.message); }
 }
 
 // Download PDF directly
@@ -3154,7 +3148,7 @@ function closeImgModal() {
 </div>
 
       <div style="display:flex;gap:8px;align-items:center;">
-        <button class="btn-gold-sm" onclick="ouvrirPDF(\'guide.pdf\',\'Guide_praticien_preventeur.pdf\')">📥 Télécharger</button>
+        <button class="btn-gold-sm" onclick="ouvrirPDF('guide.pdf','Guide_praticien_preventeur.pdf')">📥 Télécharger</button>
         <button onclick="closeGuideModal()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>
       </div>
     </div>
